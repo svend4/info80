@@ -1,6 +1,6 @@
 # Agent Memory Project
 
-Multi-Agent система с Data Cards, реактивностью, версионированием, Human-in-the-loop, Docker-sandbox, Observability и **экспортом в marimo**.
+Multi-Agent система с Data Cards, реактивностью, версионированием, Human-in-the-loop, sandbox, Observability, marimo и **Card Marketplace**.
 
 ## Возможности
 
@@ -9,15 +9,16 @@ Multi-Agent система с Data Cards, реактивностью, верси
 - Human-in-the-loop
 - Docker + subprocess sandbox
 - Observability (трассы)
-- **Экспорт Data Cards в marimo notebooks**
+- Экспорт в marimo
+- **Card Marketplace** (обмен карточками)
 
-## Работа с marimo
+## Card Marketplace
 
-1. В Streamlit нажмите **«Export to marimo»** на любой карточке
-2. Откройте файл:
-   ```bash
-   marimo edit data/marimo_export/имя_файла.py
-   ```
+1. На любой карточке нажмите **Publish**
+2. Карточка появится во вкладке **Marketplace**
+3. Другой пользователь (или другой проект) может нажать **Установить**
+
+Пакеты хранятся в `data/marketplace/`.
 
 ## Быстрый старт
 
