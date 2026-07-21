@@ -2,27 +2,29 @@
 
 ## Хронология (по порядку)
 
-### 1–8. Базовая система + Sandbox
-- Multi-Agent, Data Cards, Reactive, Persistence, Improved Supervisor, Safe Sandbox
+### 1–9. Базовая система + Human-in-the-loop
 
-### 9. **Human-in-the-loop** ← текущий шаг
+### 10. **Версионирование Data Cards** ← текущий шаг
 
 Добавлено:
 
-- Новое поле состояния: `waiting_for_human`, `human_feedback`, `human_decision`
-- Новый узел графа: `human_approval`
-- Supervisor теперь после Reviewer может отправлять результат человеку
-- Человек может ответить:
-  - `approve` — принять и завершить
-  - `reject` — отклонить
-  - `modify` + комментарий — отправить на доработку Coder’у
-- API endpoint `/human-feedback` для продолжения работы после решения человека
+- Модуль `src/cards/versioning.py`
+- При обновлении карточки предыдущая версия сохраняется в `data/cards/history/{card_id}/`
+- Функции:
+  - `get_versions(card_id)` — список всех версий
+  - `get_version(card_id, version)` — загрузить конкретную версию
+  - `rollback(card_id, version)` — откатить карточку
+  - `create_new_version(card)` — создать новую версию
+- Интеграция в Streamlit (просмотр истории + кнопка Rollback)
+- Creator поддерживает создание новой версии существующей карточки
 
 ---
 
-## Следующие шаги
+## Проект практически завершён по основному плану
 
-1. Версионирование карточек
-2. Более строгий sandbox (Docker)
-3. Observability / трейсинг
-4. Интеграция с marimo как execution backend
+Возможные следующие направления:
+- Более строгий sandbox (Docker)
+- Observability / трейсинг
+- Интеграция с marimo как execution backend
+- Card Marketplace
+- Автоматическое улучшение карточек агентом
