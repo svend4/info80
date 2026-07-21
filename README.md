@@ -10,16 +10,16 @@
 - **Долгосрочную память** (Graphiti)
 - **Переиспользуемые Data Cards** с зависимостями
 - **Реактивное выполнение** (по мотивам marimo)
+- **Персистентность карточек** (диск + Graphiti)
 - Интеграцию с **KAT-Coder-Pro V2.5**
 - Версионирование сессий через **Entire**
 - Удобный Streamlit UI
 
-Проект был построен **пошагово** в длинном диалоге с Grok (июль 2026).
-
 ## Основные возможности
 
 - LLM Supervisor + Researcher / Coder / Reviewer
-- Автоматическое создание Data Cards из кода, сгенерированного KAT-Coder
+- Автоматическое создание Data Cards из кода KAT-Coder
+- **Персистентность**: карточки сохраняются на диск (`data/cards/`) и переживают перезапуски
 - Dependency Graph между карточками
 - Реактивный слой (stale cards + auto-recompute)
 - Сохранение карточек в Graphiti как знания
@@ -32,9 +32,6 @@
 git clone https://github.com/svend4/info80.git
 cd info80
 
-# Включаем Entire (если используете)
-entire enable
-
 cp .env.example .env
 # Заполните KAT_CODER_API_KEY и другие переменные
 
@@ -46,28 +43,26 @@ make ui          # Только Streamlit UI
 ## Структура проекта
 
 ```
-agent-memory-project/
-├── docker-compose.yml
-├── Dockerfile
-├── Makefile
-├── requirements.txt
-├── .env.example
-├── main.py
-├── streamlit_app.py
-├── api/
-│   └── main.py
+info80/
+├── data/cards/                 # ← Персистентные Data Cards (JSON)
 ├── src/
 │   ├── agent_graph.py          # Multi-Agent + Supervisor + KAT-Coder
 │   ├── memory.py               # Graphiti
 │   └── cards/
-│       ├── base.py
-│       ├── registry.py
+│       ├── base.py             # DataCard (с сериализацией)
+│       ├── registry.py         # Persistent CardRegistry
 │       ├── creator.py
 │       ├── dependency_graph.py
 │       ├── executor.py
 │       ├── reactive.py
 │       └── graphiti_integration.py
-└── HISTORY.md                  # История развития проекта из сессии
+├── streamlit_app.py
+├── api/main.py
+├── main.py
+├── docker-compose.yml
+├── Dockerfile
+├── Makefile
+└── HISTORY.md
 ```
 
 ## Архитектура (кратко)
@@ -75,19 +70,27 @@ agent-memory-project/
 1. **Supervisor** (LLM) решает, кого вызвать
 2. **Researcher** достаёт контекст из Graphiti
 3. **Coder** (KAT-Coder) генерирует код + автоматически создаёт Data Card
-4. **Reviewer** проверяет результат
-5. Data Cards имеют зависимости и реактивно пересчитываются
-6. Всё сохраняется в Graphiti и может версионироваться через Entire
+4. Карточка **сразу сохраняется** на диск + в Graphiti
+5. **Reviewer** проверяет результат
+6. Data Cards имеют зависимости и реактивно пересчитываются
+
+## Текущий статус (по порядку разработки)
+
+- [x] Multi-Agent + LLM Supervisor
+- [x] Data Cards система
+- [x] Dependency Graph
+- [x] Реактивный слой
+- [x] **Персистентность карточек** ← только что сделано
+- [ ] Улучшение Supervisor (следующий шаг)
+- [ ] Безопасное выполнение сгенерированного кода
+- [ ] Human-in-the-loop
+- [ ] Версионирование карточек
 
 ## Связь с DataCards.app и marimo
 
-- **DataCards.app** — enterprise-версия похожей идеи (реактивные executable nodes + dependency graph + compliance)
+- **DataCards.app** — enterprise-версия похожей идеи
 - **marimo** — ближайший открытый аналог реактивных ноутбуков
-- Этот проект берёт лучшее из обеих философий и упаковывает в Multi-Agent + Graphiti систему
-
-## Лицензия
-
-См. LICENSE
+- Этот проект берёт лучшее из обеих философий
 
 ---
 
