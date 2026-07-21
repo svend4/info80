@@ -1,30 +1,39 @@
 # История разработки проекта
 
-## Хронология (по порядку)
+## Основной план (завершён)
 
-### 1–9. Базовая система + Human-in-the-loop
+1. Multi-Agent
+2. Data Cards
+3. Dependency Graph
+4. Реактивный слой
+5. Streamlit UI
+6. Персистентность
+7. Улучшенный Supervisor
+8. Безопасный subprocess sandbox
+9. Human-in-the-loop
+10. Версионирование карточек
 
-### 10. **Версионирование Data Cards** ← текущий шаг
+## Дополнительные улучшения
 
-Добавлено:
+### 11. **Строгий Docker-sandbox** ← текущий шаг
 
-- Модуль `src/cards/versioning.py`
-- При обновлении карточки предыдущая версия сохраняется в `data/cards/history/{card_id}/`
-- Функции:
-  - `get_versions(card_id)` — список всех версий
-  - `get_version(card_id, version)` — загрузить конкретную версию
-  - `rollback(card_id, version)` — откатить карточку
-  - `create_new_version(card)` — создать новую версию
-- Интеграция в Streamlit (просмотр истории + кнопка Rollback)
-- Creator поддерживает создание новой версии существующей карточки
+Добавлен `src/cards/docker_sandbox.py`:
+
+- Если Docker доступен — код выполняется в изолированном контейнере:
+  - `--network none` (без сети)
+  - Ограничение памяти (128MB)
+  - Ограничение CPU
+  - Read-only файловая система
+  - Временный tmpfs
+- Если Docker недоступен — автоматический fallback на обычный subprocess sandbox
+- `execute_card_safely()` теперь предпочитает Docker
 
 ---
 
-## Проект практически завершён по основному плану
+## Возможные следующие направления
 
-Возможные следующие направления:
-- Более строгий sandbox (Docker)
-- Observability / трейсинг
-- Интеграция с marimo как execution backend
-- Card Marketplace
-- Автоматическое улучшение карточек агентом
+1. Observability / трейсинг
+2. Интеграция с marimo
+3. Card Marketplace
+4. Автоматическое улучшение карточек
+5. Более продвинутый Human-in-the-loop в Streamlit
