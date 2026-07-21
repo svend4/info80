@@ -1,0 +1,12 @@
+#!/bin/bash
+# Пример post-commit хука для синхронизации с Graphiti
+# Скопируйте в .git/hooks/post-commit и сделайте исполняемым:
+# cp hooks/post-commit.example .git/hooks/post-commit
+# chmod +x .git/hooks/post-commit
+
+echo "🔄 Синхронизация Entire → Graphiti..."
+
+# Здесь можно добавить логику парсинга чекпоинтов Entire
+# и отправки фактов в Graphiti
+
+echo "Синхронизация завершена (пример)"
