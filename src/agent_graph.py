@@ -5,6 +5,7 @@ from openai import OpenAI
 from src.memory import get_project_context
 from src.cards.creator import create_data_card_from_generation
 from src.cards.reactive import reactive_executor
+from src.observability import tracer
 import os
 from dotenv import load_dotenv
 
@@ -29,16 +30,15 @@ class AgentState(TypedDict):
     history: List[str]
     last_agent: Optional[str]
     review_result: Optional[str]
-    # Human-in-the-loop
     waiting_for_human: bool
     human_feedback: Optional[str]
-    human_decision: Optional[str]   # "approve" | "reject" | "modify" | None
+    human_decision: Optional[str]
+    trace_id: Optional[str]
 
-
-# === Специалисты ===
 
 async def researcher(state: AgentState):
     print("🔍 Researcher: ищу контекст...")
+    tracer.log("researcher", {"task": state["task"]})
     context = await get_project_context(state["task"])
     return {
         "context": context or "Контекст не найден",
@@ -51,10 +51,11 @@ async def researcher(state: AgentState):
 
 async def coder(state: AgentState):
     print("💻 Coder (KAT-Coder): генерирую код...")
+    tracer.log("coder", {"task": state["task"]})
     
     extra = ""
     if state.get("human_feedback"):
-        extra = f"\n\n=== Обратная связь от человека ===\n{state['human_feedback']}\nУчти эти замечания при генерации."
+        extra = f"\n\n=== Обратная связь от человека ===\n{state['human_feedback']}\n"
 
     prompt = f"""
 Ты — KAT-Coder-Pro V2.5.
@@ -87,6 +88,7 @@ CARD_DESCRIPTION: <краткое описание>
         task=state['task']
     )
     reactive_executor.mark_stale(new_card.id)
+    tracer.log("card_created", {"card_id": new_card.id, "name": new_card.name})
 
     return {
         "messages": [result],
@@ -101,10 +103,10 @@ CARD_DESCRIPTION: <краткое описание>
 
 async def reviewer(state: AgentState):
     print("🔎 Reviewer: проверяю код...")
+    tracer.log("reviewer")
     last_code = state["messages"][-1] if state.get("messages") else ""
     
     prompt = f"""Ты — строгий code reviewer.
-
 Проверь код на корректность, безопасность и best practices.
 
 Код:
@@ -121,6 +123,7 @@ NEEDS_WORK — если есть серьёзные замечания
         temperature=0.1
     )
     review = response.choices[0].message.content
+    tracer.log("review_result", {"result": review[:200]})
     
     return {
         "messages": [review],
@@ -133,24 +136,15 @@ NEEDS_WORK — если есть серьёзные замечания
 
 
 async def human_approval(state: AgentState):
-    """
-    Узел Human-in-the-loop.
-    Система останавливается и ждёт решения человека.
-    """
-    print("👤 Ожидание решения человека (Human-in-the-loop)...")
-    print("   Доступные действия: approve / reject / modify + комментарий")
-    
-    # В реальном использовании состояние будет обновлено извне
-    # (через API или Streamlit), а граф продолжит работу.
+    print("👤 Ожидание решения человека...")
+    tracer.log("human_approval", {"status": "waiting"})
     return {
         "waiting_for_human": True,
-        "next": "supervisor",          # После получения feedback вернёмся к supervisor
+        "next": "supervisor",
         "last_agent": "human_approval",
         "iteration": state.get("iteration", 0) + 1
     }
 
-
-# === Supervisor ===
 
 async def supervisor(state: AgentState):
     iteration = state.get("iteration", 0)
@@ -161,28 +155,33 @@ async def supervisor(state: AgentState):
     review = state.get("review_result", "") or ""
     human_decision = state.get("human_decision")
 
-    # Защита от бесконечных циклов
+    tracer.log("supervisor", {
+        "iteration": iteration,
+        "last_agent": last_agent,
+        "has_context": has_context,
+        "has_code": has_code
+    })
+
     if iteration >= MAX_ITERATIONS:
-        print(f"⚠️ Достигнут лимит итераций ({MAX_ITERATIONS}). Завершаем.")
+        tracer.log("max_iterations_reached")
+        tracer.end_trace("max_iterations")
         return {"next": "end", "history": history + ["end (max iterations)"]}
 
-    # === Обработка решения человека ===
     if human_decision:
+        tracer.log("human_decision", {"decision": human_decision})
         if human_decision == "approve":
-            print("✅ Человек одобрил результат. Завершаем.")
+            tracer.end_trace("human_approved")
             return {"next": "end", "history": history + ["end (human approved)"]}
         elif human_decision == "reject":
-            print("❌ Человек отклонил. Завершаем без сохранения.")
+            tracer.end_trace("human_rejected")
             return {"next": "end", "history": history + ["end (human rejected)"]}
         elif human_decision == "modify":
-            print("✏️ Человек запросил доработку. Отправляем на coder.")
             return {
                 "next": "coder",
                 "history": history + ["coder (human modify)"],
                 "human_decision": None
             }
 
-    # === Обычная логика ===
     if not has_context and last_agent != "researcher":
         decision = "researcher"
     elif not has_code and last_agent != "coder":
@@ -190,20 +189,19 @@ async def supervisor(state: AgentState):
     elif has_code and last_agent == "coder":
         decision = "reviewer"
     elif "APPROVED" in review.upper() and last_agent == "reviewer":
-        # После успешного ревью спрашиваем человека
         decision = "human_approval"
     elif "NEEDS_WORK" in review.upper() and last_agent == "reviewer":
-        # При проблемах тоже можем спросить человека
         decision = "human_approval"
     else:
         decision = await _llm_decide(state)
 
-    # Защита от циклов
     if len(history) >= 2 and history[-1] == decision and history[-2] == decision:
-        print(f"⚠️ Обнаружен цикл на '{decision}'. Завершаем.")
+        tracer.log("loop_detected", {"decision": decision})
+        tracer.end_trace("loop_detected")
         decision = "end"
 
     print(f"🧠 Supervisor → {decision} (iteration {iteration})")
+    tracer.log("decision", {"next": decision})
     
     return {
         "next": decision,
@@ -241,11 +239,10 @@ async def _llm_decide(state: AgentState) -> str:
             return decision
     except Exception as e:
         print(f"Ошибка LLM Supervisor: {e}")
+        tracer.log("supervisor_error", {"error": str(e)})
     
     return "end"
 
-
-# === Сборка графа ===
 
 workflow = StateGraph(AgentState)
 
