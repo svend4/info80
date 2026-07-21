@@ -3,6 +3,7 @@ from src.cards.registry import card_registry
 from src.cards.reactive import reactive_executor
 from src.cards.executor import execute_card_safely
 from src.cards.versioning import get_versions, rollback
+from src.cards.marimo_export import export_card_to_marimo, list_exported_notebooks
 from src.cards.graphiti_integration import search_cards_in_graphiti
 from src.observability import list_traces, get_trace
 import asyncio
@@ -10,7 +11,12 @@ import asyncio
 st.set_page_config(page_title="Data Cards • Agent System", layout="wide")
 st.title("📦 Data Cards • Multi-Agent System")
 
-tab1, tab2, tab3 = st.tabs(["Data Cards", "Трассы (Observability)", "Поиск в Graphiti"])
+tab1, tab2, tab3, tab4 = st.tabs([
+    "Data Cards", 
+    "Трассы (Observability)", 
+    "marimo Export",
+    "Поиск в Graphiti"
+])
 
 with tab1:
     st.subheader("Все Data Cards")
@@ -41,6 +47,10 @@ with tab1:
                             st.code(result.get("stdout", ""))
                         else:
                             st.error(result.get("error"))
+                    
+                    if st.button("📓 Export to marimo", key=f"marimo_{card.id}"):
+                        path = export_card_to_marimo(card)
+                        st.success(f"Экспортировано: {path}")
 
 with tab2:
     st.subheader("Трассы выполнения агентов")
@@ -53,14 +63,25 @@ with tab2:
             with st.expander(f"{t['trace_id']}  |  {t['status']}  |  событий: {t['events_count']}"):
                 st.write(f"**Начало:** {t.get('started_at', '')[:19]}")
                 st.write("**Метрики:**", t.get("metrics", {}))
-                
                 full = get_trace(t["trace_id"])
                 if full and full.get("events"):
                     st.write("**События:**")
                     for e in full["events"]:
-                        st.write(f"- `{e['timestamp'][11:19]}` **{e['type']}** — {e.get('data', {})}")
+                        st.write(f"- `{e['timestamp'][11:19]}` **{e['type']}**")
 
 with tab3:
+    st.subheader("Экспортированные marimo-ноутбуки")
+    st.caption("Карточки можно открыть в marimo для интерактивной работы:")
+    st.code("marimo edit data/marimo_export/имя_файла.py")
+    
+    notebooks = list_exported_notebooks()
+    if not notebooks:
+        st.info("Пока нет экспортированных ноутбуков. Нажмите «Export to marimo» на карточке.")
+    else:
+        for nb in notebooks:
+            st.write(f"📓 `{nb.name}`")
+
+with tab4:
     query = st.text_input("Поиск в Graphiti")
     if st.button("Искать") and query:
         results = asyncio.run(search_cards_in_graphiti(query))

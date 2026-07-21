@@ -1,25 +1,23 @@
 # Agent Memory Project
 
-Multi-Agent система с Data Cards, реактивностью, версионированием, Human-in-the-loop, Docker-sandbox и **Observability**.
+Multi-Agent система с Data Cards, реактивностью, версионированием, Human-in-the-loop, Docker-sandbox, Observability и **экспортом в marimo**.
 
 ## Возможности
 
 - Multi-Agent (Supervisor + Researcher + Coder + Reviewer)
 - Data Cards + Reactive + Versioning
 - Human-in-the-loop
-- Два уровня sandbox (subprocess + Docker)
-- **Observability** — полные трассы выполнения агентов
-- Streamlit UI + FastAPI
+- Docker + subprocess sandbox
+- Observability (трассы)
+- **Экспорт Data Cards в marimo notebooks**
 
-## Observability
+## Работа с marimo
 
-Каждый запуск задачи создаёт трассу в `data/traces/`.
-
-В Streamlit есть вкладка **«Трассы»**, где можно посмотреть:
-- Какие агенты вызывались
-- Решения Supervisor
-- Созданные карточки
-- Метрики
+1. В Streamlit нажмите **«Export to marimo»** на любой карточке
+2. Откройте файл:
+   ```bash
+   marimo edit data/marimo_export/имя_файла.py
+   ```
 
 ## Быстрый старт
 

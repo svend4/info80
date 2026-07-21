@@ -4,25 +4,27 @@
 
 ## Дополнительные улучшения
 
-### 11. Docker-sandbox
+11. Docker-sandbox  
+12. Observability / Трейсинг  
 
-### 12. **Observability / Трейсинг** ← текущий шаг
+### 13. **Интеграция с marimo** ← текущий шаг
 
-Добавлен модуль `src/observability.py`:
+Добавлен модуль `src/cards/marimo_export.py`:
 
-- `Tracer` — логирует каждый шаг агентов
-- Считает метрики (количество вызовов researcher/coder/reviewer и т.д.)
-- Сохраняет трассы в `data/traces/*.json`
-- Streamlit получил вкладку «Трассы (Observability)»
-- `main.py` автоматически начинает и завершает трассу
+- Любую Data Card можно экспортировать в формат **marimo notebook**
+- Файлы сохраняются в `data/marimo_export/`
+- В Streamlit появилась кнопка **«Export to marimo»** и отдельная вкладка
+- После экспорта карточку можно открыть командой:
+  ```bash
+  marimo edit data/marimo_export/имя_файла.py
+  ```
 
-Теперь можно видеть полную историю решений Supervisor и работы агентов.
+Это позволяет использовать реактивные возможности marimo для дальнейшей работы с карточками.
 
 ---
 
 ## Возможные следующие направления
 
-1. Интеграция с marimo
-2. Card Marketplace
-3. Автоматическое улучшение карточек
-4. Более удобный Human-in-the-loop в Streamlit
+1. Card Marketplace
+2. Автоматическое улучшение карточек агентом
+3. Более удобный Human-in-the-loop в Streamlit
