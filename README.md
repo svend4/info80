@@ -1,28 +1,25 @@
 # Agent Memory Project
 
-Multi-Agent система с Data Cards, реактивностью, версионированием, Human-in-the-loop и **двумя уровнями sandbox**.
+Multi-Agent система с Data Cards, реактивностью, версионированием, Human-in-the-loop, Docker-sandbox и **Observability**.
 
 ## Возможности
 
 - Multi-Agent (Supervisor + Researcher + Coder + Reviewer)
-- Data Cards + Dependency Graph + Reactive + Versioning
+- Data Cards + Reactive + Versioning
 - Human-in-the-loop
-- **Два sandbox**:
-  - Subprocess (базовый)
-  - **Docker** (строгая изоляция, если доступен)
+- Два уровня sandbox (subprocess + Docker)
+- **Observability** — полные трассы выполнения агентов
 - Streamlit UI + FastAPI
 
-## Безопасность выполнения кода
+## Observability
 
-```text
-execute_card_safely()
-       │
-       ├─ Docker доступен? ──► Docker sandbox
-       │                         (network=none, memory limit, read-only)
-       │
-       └─ Нет ───────────────► Subprocess sandbox
-                                 (timeout + static checks)
-```
+Каждый запуск задачи создаёт трассу в `data/traces/`.
+
+В Streamlit есть вкладка **«Трассы»**, где можно посмотреть:
+- Какие агенты вызывались
+- Решения Supervisor
+- Созданные карточки
+- Метрики
 
 ## Быстрый старт
 
@@ -32,10 +29,6 @@ cd info80
 cp .env.example .env
 make ui
 ```
-
-## Статус
-
-Основной план полностью выполнен + добавлен строгий Docker-sandbox.
 
 ---
 *Проект из длинной сессии с Grok (июль 2026)*

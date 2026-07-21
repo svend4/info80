@@ -1,39 +1,28 @@
 # История разработки проекта
 
-## Основной план (завершён)
-
-1. Multi-Agent
-2. Data Cards
-3. Dependency Graph
-4. Реактивный слой
-5. Streamlit UI
-6. Персистентность
-7. Улучшенный Supervisor
-8. Безопасный subprocess sandbox
-9. Human-in-the-loop
-10. Версионирование карточек
+## Основной план (1–10) — завершён
 
 ## Дополнительные улучшения
 
-### 11. **Строгий Docker-sandbox** ← текущий шаг
+### 11. Docker-sandbox
 
-Добавлен `src/cards/docker_sandbox.py`:
+### 12. **Observability / Трейсинг** ← текущий шаг
 
-- Если Docker доступен — код выполняется в изолированном контейнере:
-  - `--network none` (без сети)
-  - Ограничение памяти (128MB)
-  - Ограничение CPU
-  - Read-only файловая система
-  - Временный tmpfs
-- Если Docker недоступен — автоматический fallback на обычный subprocess sandbox
-- `execute_card_safely()` теперь предпочитает Docker
+Добавлен модуль `src/observability.py`:
+
+- `Tracer` — логирует каждый шаг агентов
+- Считает метрики (количество вызовов researcher/coder/reviewer и т.д.)
+- Сохраняет трассы в `data/traces/*.json`
+- Streamlit получил вкладку «Трассы (Observability)»
+- `main.py` автоматически начинает и завершает трассу
+
+Теперь можно видеть полную историю решений Supervisor и работы агентов.
 
 ---
 
 ## Возможные следующие направления
 
-1. Observability / трейсинг
-2. Интеграция с marimo
-3. Card Marketplace
-4. Автоматическое улучшение карточек
-5. Более продвинутый Human-in-the-loop в Streamlit
+1. Интеграция с marimo
+2. Card Marketplace
+3. Автоматическое улучшение карточек
+4. Более удобный Human-in-the-loop в Streamlit

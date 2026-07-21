@@ -4,79 +4,65 @@ from src.cards.reactive import reactive_executor
 from src.cards.executor import execute_card_safely
 from src.cards.versioning import get_versions, rollback
 from src.cards.graphiti_integration import search_cards_in_graphiti
+from src.observability import list_traces, get_trace
 import asyncio
 
-st.set_page_config(page_title="Data Cards • Reactive", layout="wide")
-st.title("📦 Data Cards • Reactive Manager")
-st.caption("Реактивная система + версионирование + sandbox + Human-in-the-loop")
+st.set_page_config(page_title="Data Cards • Agent System", layout="wide")
+st.title("📦 Data Cards • Multi-Agent System")
 
-st.sidebar.header("Действия")
-if st.sidebar.button("🔄 Пересчитать все устаревшие"):
-    with st.spinner("Пересчёт..."):
-        for card_id in list(reactive_executor.stale_cards):
-            asyncio.run(reactive_executor.execute_chain(card_id))
-        st.success("Готово")
+tab1, tab2, tab3 = st.tabs(["Data Cards", "Трассы (Observability)", "Поиск в Graphiti"])
 
-st.subheader("Все Data Cards")
-
-cards = card_registry.list_all()
-
-if not cards:
-    st.info("Пока нет ни одной Data Card.")
-else:
-    for card in cards:
-        is_stale = card.id in reactive_executor.stale_cards
-        status = "🔴 Устарела" if is_stale else "🟢 Актуальна"
-        
-        with st.expander(f"{status}  **{card.name}**  v{card.version}  (`{card.id})"):
-            col1, col2 = st.columns([3, 1])
+with tab1:
+    st.subheader("Все Data Cards")
+    cards = card_registry.list_all()
+    
+    if not cards:
+        st.info("Пока нет ни одной Data Card.")
+    else:
+        for card in cards:
+            is_stale = card.id in reactive_executor.stale_cards
+            status = "🔴 Устарела" if is_stale else "🟢 Актуальна"
             
-            with col1:
-                st.write(f"**Описание:** {card.description}")
-                st.write(f"**Владелец:** {card.owner}")
-                if card.tags:
-                    st.write(f"**Теги:** {', '.join(card.tags)}")
-                if card.dependencies:
-                    st.write(f"**Зависит от:** {', '.join(card.dependencies)}")
-                
-                if card.source_code:
-                    with st.expander("Показать код"):
-                        st.code(card.source_code, language="python")
-                
-                # Версии
-                versions = get_versions(card.id)
-                if versions:
-                    st.write("**История версий:**")
-                    for v in versions:
-                        st.write(f"- v{v['version']} ({v.get('created_at', '')[:19]})")
-            
-            with col2:
-                if st.button("▶ Безопасно выполнить", key=f"safe_{card.id}"):
-                    with st.spinner("Sandbox..."):
+            with st.expander(f"{status}  **{card.name}**  v{card.version}"):
+                col1, col2 = st.columns([3, 1])
+                with col1:
+                    st.write(card.description)
+                    if card.source_code:
+                        with st.expander("Код"):
+                            st.code(card.source_code, language="python")
+                    versions = get_versions(card.id)
+                    if versions:
+                        st.write("Версии:", ", ".join([f"v{v['version']}" for v in versions]))
+                with col2:
+                    if st.button("▶ Выполнить", key=f"exec_{card.id}"):
                         result = execute_card_safely(card.id)
                         if result.get("success"):
-                            st.success("Успешно")
-                            if result.get("stdout"):
-                                st.code(result["stdout"])
+                            st.success("OK")
+                            st.code(result.get("stdout", ""))
                         else:
                             st.error(result.get("error"))
-                
-                if versions:
-                    selected_version = st.selectbox(
-                        "Откатить к версии",
-                        options=[v["version"] for v in versions],
-                        key=f"ver_{card.id}"
-                    )
-                    if st.button("Rollback", key=f"rb_{card.id}"):
-                        rolled = rollback(card.id, selected_version)
-                        if rolled:
-                            st.success(f"Откат выполнен → v{rolled.version}")
-                            st.rerun()
 
-st.divider()
-st.subheader("Поиск в Graphiti")
-query = st.text_input("Запрос")
-if st.button("Искать") and query:
-    results = asyncio.run(search_cards_in_graphiti(query))
-    for r in results:
-        st.write(r)
+with tab2:
+    st.subheader("Трассы выполнения агентов")
+    traces = list_traces(limit=30)
+    
+    if not traces:
+        st.info("Трасс пока нет. Запустите задачу через main.py или API.")
+    else:
+        for t in traces:
+            with st.expander(f"{t['trace_id']}  |  {t['status']}  |  событий: {t['events_count']}"):
+                st.write(f"**Начало:** {t.get('started_at', '')[:19]}")
+                st.write("**Метрики:**", t.get("metrics", {}))
+                
+                full = get_trace(t["trace_id"])
+                if full and full.get("events"):
+                    st.write("**События:**")
+                    for e in full["events"]:
+                        st.write(f"- `{e['timestamp'][11:19]}` **{e['type']}** — {e.get('data', {})}")
+
+with tab3:
+    query = st.text_input("Поиск в Graphiti")
+    if st.button("Искать") and query:
+        results = asyncio.run(search_cards_in_graphiti(query))
+        for r in results:
+            st.write(r)
