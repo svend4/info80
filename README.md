@@ -1,16 +1,15 @@
-# Agent Memory Project — Multi-Agent + Data Cards + Graphiti + Reactive
+# Agent Memory Project
 
-Полноценная агентная система с безопасным выполнением кода.
+Multi-Agent система с Data Cards, реактивностью, безопасным выполнением кода и **Human-in-the-loop**.
 
 ## Возможности
 
 - Multi-Agent (Supervisor + Researcher + Coder + Reviewer)
-- Data Cards с зависимостями и реактивностью
-- **Персистентность** карточек
-- **Умный Supervisor** с защитой от циклов
-- **Безопасный sandbox** для выполнения сгенерированного кода
-- Streamlit UI
-- Graphiti + Docker
+- Data Cards + Dependency Graph + Reactive
+- Персистентность карточек
+- Безопасный sandbox
+- **Human-in-the-loop** (approve / reject / modify)
+- Streamlit UI + FastAPI
 
 ## Быстрый старт
 
@@ -18,28 +17,33 @@
 git clone https://github.com/svend4/info80.git
 cd info80
 cp .env.example .env
-# Заполните KAT_CODER_API_KEY
-
 make ui
 ```
 
-## Текущий статус
+## Human-in-the-loop
+
+После того как Reviewer проверил код, система может остановиться и ждать решения человека.
+
+Через API:
+
+```bash
+# 1. Запустить задачу
+curl -X POST http://localhost:8000/run -d '{"task": "..."}'
+
+# 2. Если waiting_for_human == true, отправить решение
+curl -X POST http://localhost:8000/human-feedback \
+  -d '{"decision": "approve", "current_state": {...}}'
+```
+
+Возможные решения: `approve` | `reject` | `modify`
+
+## Статус
 
 - [x] Multi-Agent + Supervisor
-- [x] Data Cards + Dependency Graph
-- [x] Реактивный слой
-- [x] Персистентность
-- [x] Улучшенный Supervisor
-- [x] **Безопасный sandbox** ← сделано
-- [ ] Human-in-the-loop
+- [x] Data Cards + Reactive + Persistence
+- [x] Safe Sandbox
+- [x] **Human-in-the-loop**
 - [ ] Версионирование карточек
-
-## Безопасность
-
-Сгенерированный код выполняется в изолированном процессе с:
-- Таймаутом
-- Статической проверкой опасных конструкций
-- Отдельным временным файлом
 
 ---
 *Проект из длинной сессии с Grok (июль 2026)*

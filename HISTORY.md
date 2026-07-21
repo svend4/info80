@@ -1,26 +1,28 @@
-# История разработки проекта (из сессии с Grok)
+# История разработки проекта
 
 ## Хронология (по порядку)
 
-### 1–8. Базовая система
-- KAT-Coder, Entire, Graphiti, Multi-Agent, Data Cards, Reactive, Streamlit, Persistence, Improved Supervisor
+### 1–8. Базовая система + Sandbox
+- Multi-Agent, Data Cards, Reactive, Persistence, Improved Supervisor, Safe Sandbox
 
-### 9. **Безопасное выполнение кода (Sandbox)** ← текущий шаг
+### 9. **Human-in-the-loop** ← текущий шаг
 
-Добавлен модуль `src/cards/sandbox.py`:
+Добавлено:
 
-- Запуск кода в **отдельном процессе** (subprocess)
-- Таймаут выполнения (по умолчанию 10 сек)
-- Статическая проверка на опасные конструкции (`os.system`, `eval`, `exec`, `subprocess`, `socket` и др.)
-- Захват stdout / stderr
-- Временные файлы удаляются после выполнения
-- Интеграция в Streamlit UI (кнопка «Безопасно выполнить»)
+- Новое поле состояния: `waiting_for_human`, `human_feedback`, `human_decision`
+- Новый узел графа: `human_approval`
+- Supervisor теперь после Reviewer может отправлять результат человеку
+- Человек может ответить:
+  - `approve` — принять и завершить
+  - `reject` — отклонить
+  - `modify` + комментарий — отправить на доработку Coder’у
+- API endpoint `/human-feedback` для продолжения работы после решения человека
 
 ---
 
-## Следующие шаги (по приоритету)
+## Следующие шаги
 
-1. Human-in-the-loop
-2. Версионирование карточек
-3. Более строгий sandbox (Docker / RestrictedPython)
-4. Observability
+1. Версионирование карточек
+2. Более строгий sandbox (Docker)
+3. Observability / трейсинг
+4. Интеграция с marimo как execution backend
